@@ -3,14 +3,14 @@
 #include "minunit.h"
 
 bool test_pass_manager_creation (void) {
-	FunctionPassManager *fpm = fpm_new ();
+	FunctionPassMan *fpm = fpm_new ();
 	mu_assert_notnull (fpm, "Failed to create Pass Manager");
 	fpm_free (fpm);
 	mu_end;
 }
 
 bool test_pass_manager_anal (void) {
-	FunctionPassManager *fpm = fpm_new ();
+	FunctionPassMan *fpm = fpm_new ();
 
 	RAnal *anal = malloc (sizeof (RAnal));
 	fpm_set_anal (fpm, anal);
@@ -21,7 +21,7 @@ bool test_pass_manager_anal (void) {
 	mu_end;
 }
 
-void *countBB (FunctionPassManager *pm, FunctionPass *p, RAnalFunction *f) {
+void *countBB (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
 	RAnalBlock *bb;
 	RListIter *iter;
 	int *x = malloc (sizeof (int));
@@ -31,12 +31,12 @@ void *countBB (FunctionPassManager *pm, FunctionPass *p, RAnalFunction *f) {
 	}
 	return x;
 }
-void *invalidatecb (FunctionPassManager *pm, FunctionPass *p, RAnalFunction *f) {
+void *invalidatecb (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
 	free (fpm_get_cached_result (pm, p->name, f));
 	return NULL;
 }
 bool test_pass_manager_new_pass (void) {
-	FunctionPassManager *fpm = fpm_new ();
+	FunctionPassMan *fpm = fpm_new ();
 	FunctionPass p;
 	p.name = "COUNTBB";
 	mu_assert_eq (fpm_register_pass (fpm, &p), false, "Added pass without run or invalidate callbacks");
@@ -66,7 +66,7 @@ bool test_pass_manager_results_fetching (void) {
 		.invalidate = invalidatecb,
 	};
 	char name[] = "COUNTBB";
-	FunctionPassManager *fpm = fpm_new ();
+	FunctionPassMan *fpm = fpm_new ();
 	fpm_register_pass (fpm, &countBBPass);
 	RAnalFunction *f = newTestFunction (5);
 	int *count = NULL;
@@ -86,14 +86,14 @@ bool test_pass_manager_results_fetching (void) {
 	r_anal_fcn_free (f);
 	mu_end;
 }
-void *PASSAResults (FunctionPassManager *pm, FunctionPass *p, RAnalFunction *f) {
+void *PASSAResults (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
 	return fpm_get_result (pm, "PASSB", f);
 }
-void *PASSBResults (FunctionPassManager *pm, FunctionPass *p, RAnalFunction *f) {
+void *PASSBResults (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
 	return fpm_get_result (pm, "PASSA", f);
 }
-void registerPASSADependencies (FunctionPassManager *pm);
-void registerPASSBDependencies (FunctionPassManager *pm);
+void registerPASSADependencies (FunctionPassMan *pm);
+void registerPASSBDependencies (FunctionPassMan *pm);
 // This is the only recommended way to declare a pass, as a global variable
 FunctionPass PASSA = {
 	.name = "PASSA",
@@ -107,10 +107,10 @@ FunctionPass PASSB = {
 	.run = PASSBResults,
 	.invalidate = invalidatecb,
 };
-void registerPASSADependencies (FunctionPassManager *pm) {
+void registerPASSADependencies (FunctionPassMan *pm) {
 	fpm_register_pass (pm, &PASSB);
 }
-void registerPASSBDependencies (FunctionPassManager *pm) {
+void registerPASSBDependencies (FunctionPassMan *pm) {
 	fpm_register_pass (pm, &PASSA);
 }
 
@@ -127,7 +127,7 @@ void registerPASSBDependencies (FunctionPassManager *pm) {
  * Hard circular dependency checking is done at run time.
  *
  * On the Other hand soft circular dependency is when passA needs to register PassB and
- * passB needs to register PassA. Ideally this should be tolerated, and the The passmanager
+ * passB needs to register PassA. Ideally this should be tolerated, and the passman
  * should be able to resolve the circular dependency in this case. A good use case for this
  * type of dependency is when result(passA, FunctionX) requires result(passB, FunctionY) where
  * functionY is all the functions called by FunctionX except FunctionX itself, but then
@@ -136,7 +136,7 @@ void registerPASSBDependencies (FunctionPassManager *pm) {
  */
 
 bool test_circulardependencies () {
-	FunctionPassManager *fpm = fpm_new ();
+	FunctionPassMan *fpm = fpm_new ();
 	RAnalFunction *f = newTestFunction (1);
 
 	fpm_register_pass (fpm, &PASSA);
