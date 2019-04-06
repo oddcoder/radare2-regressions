@@ -37,7 +37,7 @@ void *invalidatecb (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
 }
 bool test_pass_manager_new_pass (void) {
 	FunctionPassMan *fpm = fpm_new ();
-	FunctionPass p;
+	FunctionPass p = {0};
 	p.name = "COUNTBB";
 	mu_assert_eq (fpm_register_pass (fpm, &p), false, "Added pass without run or invalidate callbacks");
 	p.run = countBB;
