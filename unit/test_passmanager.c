@@ -3,14 +3,14 @@
 #include "minunit.h"
 
 bool test_pass_manager_creation (void) {
-	FunctionPassMan *fpm = fpm_new ();
+	RFuncPassMan *fpm = fpm_new ();
 	mu_assert_notnull (fpm, "Failed to create Pass Manager");
 	fpm_free (fpm);
 	mu_end;
 }
 
 bool test_pass_manager_anal (void) {
-	FunctionPassMan *fpm = fpm_new ();
+	RFuncPassMan *fpm = fpm_new ();
 
 	RAnal *anal = malloc (sizeof (RAnal));
 	fpm_set_anal (fpm, anal);
@@ -21,7 +21,7 @@ bool test_pass_manager_anal (void) {
 	mu_end;
 }
 
-void *countBB (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
+void *countBB (RFuncPassMan *pm, RFuncPass *p, RAnalFunction *f) {
 	RAnalBlock *bb;
 	RListIter *iter;
 	int *x = malloc (sizeof (int));
@@ -31,13 +31,13 @@ void *countBB (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
 	}
 	return x;
 }
-void *invalidatecb (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
+void *invalidatecb (RFuncPassMan *pm, RFuncPass *p, RAnalFunction *f) {
 	free (fpm_get_cached_result (pm, p->name, f));
 	return NULL;
 }
 bool test_pass_manager_new_pass (void) {
-	FunctionPassMan *fpm = fpm_new ();
-	FunctionPass p = {0};
+	RFuncPassMan *fpm = fpm_new ();
+	RFuncPass p = {0};
 	p.name = "COUNTBB";
 	mu_assert_eq (fpm_register_pass (fpm, &p), false, "Added pass without run or invalidate callbacks");
 	p.run = countBB;
@@ -60,13 +60,13 @@ RAnalFunction *newTestFunction (int bb_count) {
 	return f;
 }
 bool test_pass_manager_results_fetching (void) {
-	FunctionPass countBBPass = {
+	RFuncPass countBBPass = {
 		.name = "COUNTBB",
 		.run = countBB,
 		.invalidate = invalidatecb,
 	};
 	char name[] = "COUNTBB";
-	FunctionPassMan *fpm = fpm_new ();
+	RFuncPassMan *fpm = fpm_new ();
 	fpm_register_pass (fpm, &countBBPass);
 	RAnalFunction *f = newTestFunction (5);
 	int *count = NULL;
@@ -86,31 +86,31 @@ bool test_pass_manager_results_fetching (void) {
 	r_anal_fcn_free (f);
 	mu_end;
 }
-void *PASSAResults (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
+void *PASSAResults (RFuncPassMan *pm, RFuncPass *p, RAnalFunction *f) {
 	return fpm_get_result (pm, "PASSB", f);
 }
-void *PASSBResults (FunctionPassMan *pm, FunctionPass *p, RAnalFunction *f) {
+void *PASSBResults (RFuncPassMan *pm, RFuncPass *p, RAnalFunction *f) {
 	return fpm_get_result (pm, "PASSA", f);
 }
-void registerPASSADependencies (FunctionPassMan *pm);
-void registerPASSBDependencies (FunctionPassMan *pm);
+void registerPASSADependencies (RFuncPassMan *pm);
+void registerPASSBDependencies (RFuncPassMan *pm);
 // This is the only recommended way to declare a pass, as a global variable
-FunctionPass PASSA = {
+RFuncPass PASSA = {
 	.name = "PASSA",
 	.registerDependencies = registerPASSADependencies,
 	.run = PASSAResults,
 	.invalidate = invalidatecb,
 };
-FunctionPass PASSB = {
+RFuncPass PASSB = {
 	.name = "PASSB",
 	.registerDependencies = registerPASSBDependencies,
 	.run = PASSBResults,
 	.invalidate = invalidatecb,
 };
-void registerPASSADependencies (FunctionPassMan *pm) {
+void registerPASSADependencies (RFuncPassMan *pm) {
 	fpm_register_pass (pm, &PASSB);
 }
-void registerPASSBDependencies (FunctionPassMan *pm) {
+void registerPASSBDependencies (RFuncPassMan *pm) {
 	fpm_register_pass (pm, &PASSA);
 }
 
@@ -136,7 +136,7 @@ void registerPASSBDependencies (FunctionPassMan *pm) {
  */
 
 bool test_circulardependencies () {
-	FunctionPassMan *fpm = fpm_new ();
+	RFuncPassMan *fpm = fpm_new ();
 	RAnalFunction *f = newTestFunction (1);
 
 	fpm_register_pass (fpm, &PASSA);
